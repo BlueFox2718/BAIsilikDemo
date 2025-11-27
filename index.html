@@ -1,0 +1,272 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width,initial-scale=1" />
+<title>B.AI.silik</title>
+<link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap" rel="stylesheet">
+<style>
+:root{--futur-color:#0088FF}
+*{box-sizing:border-box}
+html,body{height:100%;margin:0;font-family:'Orbitron',sans-serif;background:#fff;color:var(--futur-color)}
+body{display:flex;flex-direction:column;align-items:center;padding:env(safe-area-inset-top)10px 10px;overflow:auto}
+h1{font-size:2rem;margin:10px 0 20px}
+button{background:transparent;border:2px solid var(--futur-color);color:var(--futur-color);padding:12px 24px;border-radius:8px;cursor:pointer;font-size:16px}
+button:hover{background:var(--futur-color);color:#000}
+
+/* Conteneurs */
+#cameraContainer{display:none;flex-direction:column;align-items:center;margin-top:10px;width:100%;max-width:920px}
+#photoFrame{position:relative;width:100%;max-width:920px;margin:20px auto;border:2px solid var(--futur-color);border-radius:12px;overflow:hidden;background:#000;display:block;}
+
+video, canvas{
+  display:block;
+  width:100%;
+  height:100%;
+  object-fit:contain;
+}
+
+/* Overlay et résultat */
+#scanOverlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;display:none;z-index:4}
+#scanOverlay .line{position:absolute;background:#00FFFF;opacity:.5}
+#scanText{display:none;margin-top:8px;font-size:1.2rem;white-space:pre}
+#resultBox{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;color:#000;padding:12px 16px;border-radius:10px;z-index:6;max-width:90%;text-align:center}
+
+@media (max-width:600px){ 
+  h1{font-size:1.6rem} 
+  button{padding:10px 18px} 
+}
+</style>
+</head>
+<body>
+<h1>B.AI.silik</h1>
+<button id="startBtn">Prendre une photo</button>
+
+<div id="cameraContainer">
+  <div style="margin:12px 0">
+    <button id="captureBtn">Capturer</button>
+    <button id="analyzeBtn" style="display:none;margin-left:10px">Analyser</button>
+  </div>
+
+  <div id="scanText">Analyse en cours</div>
+
+  <div id="photoFrame" aria-live="polite">
+    <canvas id="canvas" style="display:none;"></canvas>
+    <video id="video" autoplay playsinline></video>
+    <div id="scanOverlay"></div>
+    <div id="resultBox"></div>
+  </div>
+</div>
+
+<script>
+/* --- IA Base64 depuis URL --- */
+function getIAFromURL_Base64(){
+  let defaultResponse = "La photo montre un magicien réalisé un tour de magie";
+  try {
+    const params = new URLSearchParams(window.location.search);
+    const encoded = params.get("IA");
+
+    if (!encoded || encoded.trim() === "") {
+      return defaultResponse;
+    }
+
+    // Décodage Base64 (gère UTF-8)
+    const decoded = decodeURIComponent(escape(window.atob(encoded)));
+    if (!decoded) return defaultResponse;
+    return decoded;
+
+  } catch (e) {
+    console.warn("Erreur décodage Base64:", e);
+    return defaultResponse;
+  }
+}
+
+const Reponse_IA = getIAFromURL_Base64();
+
+/* Elements */
+const startBtn = document.getElementById('startBtn');
+const captureBtn = document.getElementById('captureBtn');
+const analyzeBtn = document.getElementById('analyzeBtn');
+const cameraContainer = document.getElementById('cameraContainer');
+const video = document.getElementById('video');
+const canvas = document.getElementById('canvas');
+const photoFrame = document.getElementById('photoFrame');
+const scanOverlay = document.getElementById('scanOverlay');
+const scanText = document.getElementById('scanText');
+const resultBox = document.getElementById('resultBox');
+
+let stream = null;
+let dotsInterval = null;
+
+/* Démarrage caméra */
+startBtn.addEventListener('click', async () => {
+  cameraContainer.style.display = 'flex';
+  startBtn.remove();
+
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({
+      video: { facingMode: { ideal: "environment" }},
+      audio: false
+    });
+    video.srcObject = stream;
+
+    video.addEventListener('loadedmetadata', onVideoMetadata);
+    window.addEventListener('resize', syncFrameToVideo);
+  } catch (err) {
+    console.error(err);
+    alert("Impossible d'accéder à la caméra.");
+  }
+});
+
+/* Ajustement ratio */
+function onVideoMetadata(){
+  const vw = video.videoWidth || 640;
+  const vh = video.videoHeight || 480;
+  syncFrameToVideo();
+  canvas.width = vw;
+  canvas.height = vh;
+  canvas.style.display = 'none';
+}
+
+function syncFrameToVideo(){
+  const vw = video.videoWidth || canvas.width || 640;
+  const vh = video.videoHeight || canvas.height || 480;
+  if (!vw || !vh) return;
+
+  const usedWidth = Math.min(photoFrame.parentElement.clientWidth, 920);
+  const h = Math.round(usedWidth * vh / vw);
+
+  photoFrame.style.width = usedWidth + "px";
+  photoFrame.style.height = h + "px";
+}
+
+/* Capture */
+captureBtn.addEventListener('click', () => {
+  if (!canvas.width || !canvas.height){
+    canvas.width = video.videoWidth || 1280;
+    canvas.height = video.videoHeight || 720;
+  }
+
+  const ctx = canvas.getContext('2d');
+  ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+  canvas.style.display = 'block';
+  video.style.display = 'none';
+
+  captureBtn.style.display = 'none';
+  analyzeBtn.style.display = 'inline-block';
+});
+
+/* Analyse */
+analyzeBtn.addEventListener('click', () => {
+  analyzeBtn.remove();
+  scanText.style.display = 'block';
+  scanOverlay.style.display = 'block';
+  startDots();
+
+  startScanAnimation(() => {
+    scanOverlay.innerHTML = '';
+    scanText.style.display = 'none';
+    stopDots();
+    typeText(Reponse_IA);
+  });
+});
+
+/* Points ... */
+function startDots(){
+  let dots = 0;
+  dotsInterval = setInterval(() => {
+    dots = (dots + 1) % 4;
+    scanText.textContent = "Analyse en cours" + ".".repeat(dots);
+  }, 500);
+}
+function stopDots(){ clearInterval(dotsInterval); }
+
+/* Scan animation */
+function startScanAnimation(done){
+  const dirs = ['down','up','right','left'];
+  let i = 0;
+
+  function next(){
+    if (i >= dirs.length) return done();
+
+    scanOverlay.innerHTML = '';
+    const line = document.createElement('div');
+    line.className = 'line';
+    scanOverlay.appendChild(line);
+
+    let anim;
+    switch(dirs[i++]){
+      case 'down':
+        line.style.width='100%'; line.style.height='6px'; line.style.top='0';
+        anim = line.animate([{top:'0%'},{top:'100%'}],{duration:1000});
+        break;
+      case 'up':
+        line.style.width='100%'; line.style.height='6px'; line.style.top='100%';
+        anim = line.animate([{top:'100%'},{top:'0%'}],{duration:1000});
+        break;
+      case 'right':
+        line.style.height='100%'; line.style.width='6px'; line.style.left='0';
+        anim = line.animate([{left:'0%'},{left:'100%'}],{duration:1000});
+        break;
+      case 'left':
+        line.style.height='100%'; line.style.width='6px'; line.style.left='100%';
+        anim = line.animate([{left:'100%'},{left:'0%'}],{duration:1000});
+        break;
+    }
+    anim.onfinish = next;
+  }
+  next();
+}
+
+/* Effet d'écriture IA */
+function typeText(text){
+  resultBox.style.display = 'block';
+  resultBox.textContent = '';
+  let i = 0;
+
+  function step(){
+    if(i < text.length){
+      resultBox.textContent += text.charAt(i++);
+      setTimeout(step, 40 + Math.random()*50);
+    }
+  }
+  step();
+}
+
+/* --- Génération nom horodaté --- */
+function getTimestampFilename(){
+  const now = new Date();
+  const pad = n => String(n).padStart(2, '0');
+
+  const day = pad(now.getDate());
+  const month = pad(now.getMonth() + 1);
+  const year = now.getFullYear();
+  const hour = pad(now.getHours());
+  const min  = pad(now.getMinutes());
+  const sec  = pad(now.getSeconds());
+
+  return `${day}${month}${year}${hour}${min}${sec}.png`;
+}
+
+/* --- Téléchargement --- */
+function downloadCapturedImage(){
+  const link = document.createElement('a');
+  link.download = getTimestampFilename();
+  link.href = canvas.toDataURL("image/png");
+  link.click();
+}
+
+/* Clic sur la réponse IA -> téléchargement */
+resultBox.addEventListener('click', () => {
+  downloadCapturedImage();
+});
+
+/* Nettoyage */
+window.addEventListener('beforeunload', () => {
+  if (stream){
+    stream.getTracks().forEach(t => t.stop());
+  }
+});
+</script>
+</body>
+</html>
