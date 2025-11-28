@@ -63,7 +63,7 @@ video, canvas{
 <script>
 /* --- IA Base64 depuis URL --- */
 function getIAFromURL_Base64(){
-  let defaultResponse = "La photo montre un magicien réalisé un tour de magie";
+  let defaultResponse = "La photo montre un magicien réaliser un tour de magie";
   try {
     const params = new URLSearchParams(window.location.search);
     const encoded = params.get("IA");
@@ -273,3 +273,4 @@ window.addEventListener('beforeunload', () => {
 </script>
 </body>
 </html>
+
