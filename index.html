@@ -34,7 +34,7 @@ video, canvas{
 /* Ajout pour permettre le scroll afin de cacher la barre d’URL */
 #scrollSpacer{
   width:100%;
-  height:200vh;
+  height:10000vh;
   pointer-events:none;
   opacity:0;
 }
@@ -71,7 +71,7 @@ video, canvas{
 <script>
 /* --- IA Base64 depuis URL --- */
 function getIAFromURL_Base64(){
-  let defaultResponse = "La photo montre un magicien réalisé un tour de magie";
+  let defaultResponse = "La photo montre un magicien réaliser un tour de magie";
   try {
     const params = new URLSearchParams(window.location.search);
     const encoded = params.get("IA");
