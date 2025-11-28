@@ -8,16 +8,35 @@
 <style>
 :root{--futur-color:#0088FF}
 *{box-sizing:border-box}
-html,body{height:100%;margin:0;font-family:'Orbitron',sans-serif;background:#fff;color:var(--futur-color)}
-body{display:flex;flex-direction:column;align-items:center;padding:env(safe-area-inset-top)10px 10px;overflow:auto}
-h1{font-size:2rem;margin:10px 0 20px}
+
+/* Remarque importante : on utilise min-height:100vh au lieu de height:100% */
+html, body {
+  min-height: 100vh;
+  margin: 0;
+  font-family: 'Orbitron', sans-serif;
+  background: #fff;
+  color: var(--futur-color);
+}
+
+/* Body en flex mais allow grow overflow auto ; align-items stretch pour ne pas contraindre largeur */
+body{
+  display:flex;
+  flex-direction:column;
+  align-items:stretch;
+  padding: env(safe-area-inset-top) 10px 10px;
+  overflow:auto;
+}
+
+/* style général */
+h1{font-size:2rem;margin:10px 0 20px;text-align:center}
 button{background:transparent;border:2px solid var(--futur-color);color:var(--futur-color);padding:12px 24px;border-radius:8px;cursor:pointer;font-size:16px}
 button:hover{background:var(--futur-color);color:#000}
 
 /* Conteneurs */
-#cameraContainer{display:none;flex-direction:column;align-items:center;margin-top:10px;width:100%;max-width:920px}
+#cameraContainer{display:none;flex-direction:column;align-items:center;margin-top:10px;width:100%;max-width:920px;margin-left:auto;margin-right:auto}
 #photoFrame{position:relative;width:100%;max-width:920px;margin:20px auto;border:2px solid var(--futur-color);border-radius:12px;overflow:hidden;background:#000;display:block;}
 
+/* video & canvas remplissent le conteneur */
 video, canvas{
   display:block;
   width:100%;
@@ -31,17 +50,20 @@ video, canvas{
 #scanText{display:none;margin-top:8px;font-size:1.2rem;white-space:pre}
 #resultBox{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;color:#000;padding:12px 16px;border-radius:10px;z-index:6;max-width:90%;text-align:center}
 
-/* Ajout pour permettre le scroll afin de cacher la barre d’URL */
+/* Spacer invisible pour permettre le scroll manuel.
+   hauteur importante mais page devra pouvoir défiler. */
 #scrollSpacer{
   width:100%;
-  height:10000vh;
+  height:150vh; /* assez grand pour autoriser un scroll sur mobile */
   pointer-events:none;
-  opacity:0;
+  opacity:0; /* totalement invisible */
+  display:block;
 }
 
-@media (max-width:600px){ 
-  h1{font-size:1.6rem} 
-  button{padding:10px 18px} 
+/* petits écrans */
+@media (max-width:600px){
+  h1{font-size:1.6rem}
+  button{padding:10px 18px}
 }
 </style>
 </head>
@@ -50,7 +72,7 @@ video, canvas{
 <button id="startBtn">Prendre une photo</button>
 
 <div id="cameraContainer">
-  <div style="margin:12px 0">
+  <div style="margin:12px 0; text-align:center;">
     <button id="captureBtn">Capturer</button>
     <button id="analyzeBtn" style="display:none;margin-left:10px">Analyser</button>
   </div>
@@ -65,13 +87,13 @@ video, canvas{
   </div>
 </div>
 
-<!-- AJOUT POUR SCROLL -->
-<div id="scrollSpacer"></div>
+<!-- Spacer invisible pour permettre le scroll manuel (placer après le contenu) -->
+<div id="scrollSpacer" aria-hidden="true"></div>
 
 <script>
 /* --- IA Base64 depuis URL --- */
 function getIAFromURL_Base64(){
-  let defaultResponse = "La photo montre un magicien réaliser un tour de magie";
+  let defaultResponse = "La photo montre un magicien réalisé un tour de magie";
   try {
     const params = new URLSearchParams(window.location.search);
     const encoded = params.get("IA");
@@ -122,6 +144,10 @@ startBtn.addEventListener('click', async () => {
 
     video.addEventListener('loadedmetadata', onVideoMetadata);
     window.addEventListener('resize', syncFrameToVideo);
+
+    // Optionnel : proposer à l'utilisateur de scroller légèrement
+    // (on affiche brièvement une instruction si besoin)
+    // Pour mobile, l'utilisateur peut glisser depuis le bas pour masquer la barre.
   } catch (err) {
     console.error(err);
     alert("Impossible d'accéder à la caméra.");
