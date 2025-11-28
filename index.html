@@ -31,6 +31,14 @@ video, canvas{
 #scanText{display:none;margin-top:8px;font-size:1.2rem;white-space:pre}
 #resultBox{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;color:#000;padding:12px 16px;border-radius:10px;z-index:6;max-width:90%;text-align:center}
 
+/* Ajout pour permettre le scroll afin de cacher la barre d’URL */
+#scrollSpacer{
+  width:100%;
+  height:200vh;
+  pointer-events:none;
+  opacity:0;
+}
+
 @media (max-width:600px){ 
   h1{font-size:1.6rem} 
   button{padding:10px 18px} 
@@ -57,6 +65,9 @@ video, canvas{
   </div>
 </div>
 
+<!-- AJOUT POUR SCROLL -->
+<div id="scrollSpacer"></div>
+
 <script>
 /* --- IA Base64 depuis URL --- */
 function getIAFromURL_Base64(){
@@ -69,6 +80,7 @@ function getIAFromURL_Base64(){
       return defaultResponse;
     }
 
+    // Décodage Base64 (gère UTF-8)
     const decoded = decodeURIComponent(escape(window.atob(encoded)));
     if (!decoded) return defaultResponse;
     return decoded;
@@ -96,23 +108,8 @@ const resultBox = document.getElementById('resultBox');
 let stream = null;
 let dotsInterval = null;
 
-/* --- Méthode Scroll-Hiding pour cacher la barre d'URL --- */
-function hideURLBar() {
-  window.scrollTo(0, 1);
-}
-
-/* Appel au chargement */
-window.addEventListener("load", () => {
-  setTimeout(hideURLBar, 200);
-});
-
 /* Démarrage caméra */
 startBtn.addEventListener('click', async () => {
-
-  hideURLBar();         // Tentative immédiate
-  setTimeout(hideURLBar, 400);  // Après affichage des boutons
-  setTimeout(hideURLBar, 1200); // Après ouverture caméra (Safari)
-
   cameraContainer.style.display = 'flex';
   startBtn.remove();
 
@@ -123,16 +120,8 @@ startBtn.addEventListener('click', async () => {
     });
     video.srcObject = stream;
 
-    video.addEventListener('loadedmetadata', () => {
-      onVideoMetadata();
-      hideURLBar(); // Re-tentative une fois la vidéo prête
-    });
-
-    window.addEventListener('resize', () => {
-      syncFrameToVideo();
-      hideURLBar();
-    });
-
+    video.addEventListener('loadedmetadata', onVideoMetadata);
+    window.addEventListener('resize', syncFrameToVideo);
   } catch (err) {
     console.error(err);
     alert("Impossible d'accéder à la caméra.");
@@ -163,8 +152,6 @@ function syncFrameToVideo(){
 
 /* Capture */
 captureBtn.addEventListener('click', () => {
-  hideURLBar();
-
   if (!canvas.width || !canvas.height){
     canvas.width = video.videoWidth || 1280;
     canvas.height = video.videoHeight || 720;
@@ -182,8 +169,6 @@ captureBtn.addEventListener('click', () => {
 
 /* Analyse */
 analyzeBtn.addEventListener('click', () => {
-  hideURLBar();
-
   analyzeBtn.remove();
   scanText.style.display = 'block';
   scanOverlay.style.display = 'block';
@@ -246,8 +231,6 @@ function startScanAnimation(done){
 
 /* Effet d'écriture IA */
 function typeText(text){
-  hideURLBar();
-  
   resultBox.style.display = 'block';
   resultBox.textContent = '';
   let i = 0;
@@ -261,7 +244,7 @@ function typeText(text){
   step();
 }
 
-/* Nom horodaté */
+/* --- Génération nom horodaté --- */
 function getTimestampFilename(){
   const now = new Date();
   const pad = n => String(n).padStart(2, '0');
@@ -276,7 +259,7 @@ function getTimestampFilename(){
   return `${day}${month}${year}${hour}${min}${sec}.png`;
 }
 
-/* Téléchargement image */
+/* --- Téléchargement --- */
 function downloadCapturedImage(){
   const link = document.createElement('a');
   link.download = getTimestampFilename();
