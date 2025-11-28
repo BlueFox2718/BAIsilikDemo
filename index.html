@@ -69,7 +69,6 @@ function getIAFromURL_Base64(){
       return defaultResponse;
     }
 
-    // Décodage Base64 (gère UTF-8)
     const decoded = decodeURIComponent(escape(window.atob(encoded)));
     if (!decoded) return defaultResponse;
     return decoded;
@@ -97,8 +96,23 @@ const resultBox = document.getElementById('resultBox');
 let stream = null;
 let dotsInterval = null;
 
+/* --- Méthode Scroll-Hiding pour cacher la barre d'URL --- */
+function hideURLBar() {
+  window.scrollTo(0, 1);
+}
+
+/* Appel au chargement */
+window.addEventListener("load", () => {
+  setTimeout(hideURLBar, 200);
+});
+
 /* Démarrage caméra */
 startBtn.addEventListener('click', async () => {
+
+  hideURLBar();         // Tentative immédiate
+  setTimeout(hideURLBar, 400);  // Après affichage des boutons
+  setTimeout(hideURLBar, 1200); // Après ouverture caméra (Safari)
+
   cameraContainer.style.display = 'flex';
   startBtn.remove();
 
@@ -109,8 +123,16 @@ startBtn.addEventListener('click', async () => {
     });
     video.srcObject = stream;
 
-    video.addEventListener('loadedmetadata', onVideoMetadata);
-    window.addEventListener('resize', syncFrameToVideo);
+    video.addEventListener('loadedmetadata', () => {
+      onVideoMetadata();
+      hideURLBar(); // Re-tentative une fois la vidéo prête
+    });
+
+    window.addEventListener('resize', () => {
+      syncFrameToVideo();
+      hideURLBar();
+    });
+
   } catch (err) {
     console.error(err);
     alert("Impossible d'accéder à la caméra.");
@@ -141,6 +163,8 @@ function syncFrameToVideo(){
 
 /* Capture */
 captureBtn.addEventListener('click', () => {
+  hideURLBar();
+
   if (!canvas.width || !canvas.height){
     canvas.width = video.videoWidth || 1280;
     canvas.height = video.videoHeight || 720;
@@ -158,6 +182,8 @@ captureBtn.addEventListener('click', () => {
 
 /* Analyse */
 analyzeBtn.addEventListener('click', () => {
+  hideURLBar();
+
   analyzeBtn.remove();
   scanText.style.display = 'block';
   scanOverlay.style.display = 'block';
@@ -220,6 +246,8 @@ function startScanAnimation(done){
 
 /* Effet d'écriture IA */
 function typeText(text){
+  hideURLBar();
+  
   resultBox.style.display = 'block';
   resultBox.textContent = '';
   let i = 0;
@@ -233,7 +261,7 @@ function typeText(text){
   step();
 }
 
-/* --- Génération nom horodaté --- */
+/* Nom horodaté */
 function getTimestampFilename(){
   const now = new Date();
   const pad = n => String(n).padStart(2, '0');
@@ -248,7 +276,7 @@ function getTimestampFilename(){
   return `${day}${month}${year}${hour}${min}${sec}.png`;
 }
 
-/* --- Téléchargement --- */
+/* Téléchargement image */
 function downloadCapturedImage(){
   const link = document.createElement('a');
   link.download = getTimestampFilename();
