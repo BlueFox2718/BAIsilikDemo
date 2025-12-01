@@ -5,46 +5,170 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>B.AI.silik</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap" rel="stylesheet">
+
 <style>
-:root{--futur-color:#0088FF}
-*{box-sizing:border-box}
-html,body{height:100%;margin:0;font-family:'Orbitron',sans-serif;background:#fff;color:var(--futur-color)}
-body{display:flex;flex-direction:column;align-items:center;padding:env(safe-area-inset-top)10px 10px;overflow:auto}
-h1{font-size:2rem;margin:10px 0 20px}
-button{background:transparent;border:2px solid var(--futur-color);color:var(--futur-color);padding:12px 24px;border-radius:8px;cursor:pointer;font-size:16px}
-button:hover{background:var(--futur-color);color:#000}
+:root { --futur-color:#0088FF; }
+*{ box-sizing:border-box; }
+html,body{
+  height:100%; margin:0;
+  font-family:'Orbitron',sans-serif;
+  background:#fff; color:var(--futur-color);
+}
+body{
+  display:flex; flex-direction:column;
+  align-items:center;
+  padding:env(safe-area-inset-top) 10px 10px;
+  overflow:auto;
+}
+
+h1{
+  font-size:2rem; margin:10px 0 20px;
+  user-select:none;
+}
+
+button{
+  background:transparent;
+  border:2px solid var(--futur-color);
+  color:var(--futur-color);
+  padding:12px 24px;
+  border-radius:8px;
+  cursor:pointer;
+  font-size:16px;
+}
+button:hover{ background:var(--futur-color); color:#000; }
 
 /* Conteneurs */
-#cameraContainer{display:none;flex-direction:column;align-items:center;margin-top:10px;width:100%;max-width:920px}
-#photoFrame{position:relative;width:100%;max-width:920px;margin:20px auto;border:2px solid var(--futur-color);border-radius:12px;overflow:hidden;background:#000;display:block;}
+#cameraContainer{
+  display:none; flex-direction:column;
+  align-items:center;
+  margin-top:10px;
+  width:100%; max-width:920px;
+}
+
+#photoFrame{
+  position:relative;
+  width:100%; max-width:920px;
+  margin:20px auto;
+  border:2px solid var(--futur-color);
+  border-radius:12px;
+  overflow:hidden;
+  background:#000;
+  display:block;
+}
 
 video, canvas{
-  display:block;
-  width:100%;
-  height:100%;
+  display:block; width:100%; height:100%;
   object-fit:contain;
 }
 
-/* Overlay et résultat */
-#scanOverlay{position:absolute;top:0;left:0;width:100%;height:100%;pointer-events:none;display:none;z-index:4}
-#scanOverlay .line{position:absolute;background:#00FFFF;opacity:.5}
-#scanText{display:none;margin-top:8px;font-size:1.2rem;white-space:pre}
-#resultBox{display:none;position:absolute;top:50%;left:50%;transform:translate(-50%,-50%);background:#fff;color:#000;padding:12px 16px;border-radius:10px;z-index:6;max-width:90%;text-align:center}
+/* Overlay scan + IA */
+#scanOverlay{
+  position:absolute; top:0; left:0;
+  width:100%; height:100%;
+  pointer-events:none; display:none;
+  z-index:4;
+}
+#scanOverlay .line{
+  position:absolute;
+  background:#00FFFF; opacity:.5;
+}
 
-@media (max-width:600px){ 
-  h1{font-size:1.6rem} 
-  button{padding:10px 18px} 
+#scanText{
+  display:none;
+  margin-top:8px;
+  font-size:1.2rem;
+  white-space:pre;
+}
+
+#resultBox{
+  display:none;
+  position:absolute;
+  top:50%; left:50%;
+  transform:translate(-50%,-50%);
+  background:#fff; color:#000;
+  padding:12px 16px;
+  border-radius:10px;
+  z-index:6; max-width:90%;
+  text-align:center;
+  cursor:pointer;
+}
+
+/* --- MENU SECRET --- */
+#secretModal{
+  position:fixed;
+  top:0; left:0;
+  width:100%; height:100%;
+  background:rgba(0,0,0,0.65);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:20;
+}
+
+#secretBox{
+  background:white; color:black;
+  padding:20px;
+  width:90%; max-width:400px;
+  border-radius:12px;
+  text-align:center;
+}
+
+#secretText{
+  width:100%;
+  height:150px;
+  resize:none;
+  padding:10px;
+  font-family:inherit;
+  border:2px solid var(--futur-color);
+  border-radius:8px;
+  font-size:14px;
+}
+
+.modalButtons{
+  margin-top:15px;
+  display:flex;
+  gap:10px;
+  justify-content:center;
+}
+
+@media (max-width:600px){
+  h1{ font-size:1.6rem; }
+  button{ padding:10px 18px; }
 }
 </style>
 </head>
+
 <body>
-<h1>B.AI.silik</h1>
+
+<h1 id="title">B.AI.silik</h1>
 <button id="startBtn">Prendre une photo</button>
 
+<!-- MENU SECRET -->
+<div id="secretModal">
+  <div id="secretBox">
+    <h3>Message personnalisé</h3>
+
+    <div style="display:flex; gap:8px; justify-content:center; margin-bottom:10px;">
+      <button id="btnCarte" style="padding:6px 12px;">Carte</button>
+      <button id="btnPiece" style="padding:6px 12px;">Pièce</button>
+      <button id="btnMain"  style="padding:6px 12px;">Main</button>
+    </div>
+
+    <textarea id="secretText"></textarea>
+
+    <div class="modalButtons">
+      <button id="cancelSecret">Annuler</button>
+      <button id="validateSecret">Valider</button>
+    </div>
+  </div>
+</div>
+
 <div id="cameraContainer">
-  <div style="margin:12px 0">
+
+  <div style="margin:12px 0; display:flex; gap:10px;">
     <button id="captureBtn">Capturer</button>
-    <button id="analyzeBtn" style="display:none;margin-left:10px">Analyser</button>
+    <button id="switchCamBtn" title="Changer de caméra">🔄</button>
+    <button id="analyzeBtn" style="display:none;">Analyser</button>
   </div>
 
   <div id="scanText">Analyse en cours</div>
@@ -56,38 +180,67 @@ video, canvas{
     <div id="resultBox"></div>
   </div>
 </div>
-<br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br><br>
-<p style="color: white;">
-.
-</p>
+
 <script>
-/* --- IA Base64 depuis URL --- */
-function getIAFromURL_Base64(){
-  let defaultResponse = "La photo montre un magicien réaliser un tour de magie";
-  try {
-    const params = new URLSearchParams(window.location.search);
-    const encoded = params.get("IA");
+/* ------------------------------------------
+        VARIABLE IA
+-------------------------------------------*/
+let defaultResponse = "La photo montre un magicien réaliser un tour de magie";
+let Response_carte = "La photo montre un magicien réaliser un tour de carte. Il y a 95.6% de chance que la carte choisie soit l'As de carreau.";
+let Response_piece = "La photo montre un magicien réaliser un tour de pièce. Mais il y a 96.4% de chance pour qu'il décide de faire un tour de carte. Il y a alors 91.3% de chance pour que la carte choisie soit le 2 de carreau.";
+let Response_main = "La photo montre une main.";
+let Reponse_IA = defaultResponse;
 
-    if (!encoded || encoded.trim() === "") {
-      return defaultResponse;
-    }
+/* ------------------------------------------
+                MENU SECRET
+-------------------------------------------*/
+const title = document.getElementById("title");
+const modal = document.getElementById("secretModal");
+const textareaSecret = document.getElementById("secretText");
+const cancelSecret = document.getElementById("cancelSecret");
+const validateSecret = document.getElementById("validateSecret");
 
-    // Décodage Base64 (gère UTF-8)
-    const decoded = decodeURIComponent(escape(window.atob(encoded)));
-    if (!decoded) return defaultResponse;
-    return decoded;
+let clickCount = 0;
+let clickTimer = null;
 
-  } catch (e) {
-    console.warn("Erreur décodage Base64:", e);
-    return defaultResponse;
-  }
+const saved = localStorage.getItem("secretMessage");
+if (saved && saved.trim() !== "") {
+    Reponse_IA = saved;
 }
 
-const Reponse_IA = getIAFromURL_Base64();
+title.addEventListener("click", () => {
+  clickCount++;
+  if (clickCount === 1){
+    clickTimer = setTimeout(() => { clickCount = 0; }, 300);
+  } else if (clickCount === 2){
+    clearTimeout(clickTimer);
+    clickCount = 0;
+    textareaSecret.value = Reponse_IA;
+    modal.style.display = "flex";
+  }
+});
 
-/* Elements */
+cancelSecret.addEventListener("click", () => modal.style.display = "none");
+
+validateSecret.addEventListener("click", () => {
+  const txt = textareaSecret.value.trim();
+  if (txt !== "") {
+      Reponse_IA = txt;
+      localStorage.setItem("secretMessage", txt);
+  }
+  modal.style.display = "none";
+});
+
+document.getElementById("btnCarte").onclick = ()=> textareaSecret.value = Response_carte;
+document.getElementById("btnPiece").onclick = ()=> textareaSecret.value = Response_piece;
+document.getElementById("btnMain").onclick  = ()=> textareaSecret.value = Response_main;
+
+/* ------------------------------------------
+                CAMÉRA + SWITCH
+-------------------------------------------*/
 const startBtn = document.getElementById('startBtn');
 const captureBtn = document.getElementById('captureBtn');
+const switchCamBtn = document.getElementById('switchCamBtn');
 const analyzeBtn = document.getElementById('analyzeBtn');
 const cameraContainer = document.getElementById('cameraContainer');
 const video = document.getElementById('video');
@@ -98,57 +251,61 @@ const scanText = document.getElementById('scanText');
 const resultBox = document.getElementById('resultBox');
 
 let stream = null;
-let dotsInterval = null;
+let usingFrontCam = false;
 
-/* Démarrage caméra */
-startBtn.addEventListener('click', async () => {
-  cameraContainer.style.display = 'flex';
-  startBtn.remove();
+/* Démarre une caméra */
+async function startCamera(){
+  if (stream) stream.getTracks().forEach(t=>t.stop());
+
+  const facing = usingFrontCam ? "user" : "environment";
 
   try {
     stream = await navigator.mediaDevices.getUserMedia({
-      video: { facingMode: { ideal: "environment" }},
-      audio: false
+      video:{ facingMode:{ ideal: facing } },
+      audio:false
     });
+
     video.srcObject = stream;
-
     video.addEventListener('loadedmetadata', onVideoMetadata);
-    window.addEventListener('resize', syncFrameToVideo);
-  } catch (err) {
-    console.error(err);
-    alert("Impossible d'accéder à la caméra.");
-  }
-});
 
-/* Ajustement ratio */
-function onVideoMetadata(){
-  const vw = video.videoWidth || 640;
-  const vh = video.videoHeight || 480;
-  syncFrameToVideo();
-  canvas.width = vw;
-  canvas.height = vh;
-  canvas.style.display = 'none';
+  } catch(err){
+    alert("Impossible d’accéder à la caméra.");
+    console.error(err);
+  }
 }
 
-function syncFrameToVideo(){
-  const vw = video.videoWidth || canvas.width || 640;
-  const vh = video.videoHeight || canvas.height || 480;
-  if (!vw || !vh) return;
+/* Bouton principal */
+startBtn.addEventListener('click', async () => {
+  cameraContainer.style.display = 'flex';
+  startBtn.remove();
+  await startCamera();
+});
 
+/* SWITCH CAMERA */
+switchCamBtn.addEventListener("click", async () => {
+  usingFrontCam = !usingFrontCam;  
+  await startCamera();
+});
+
+/* Ajustements */
+function onVideoMetadata(){
+  canvas.width = video.videoWidth;
+  canvas.height = video.videoHeight;
+  syncFrameToVideo();
+}
+window.addEventListener('resize', syncFrameToVideo);
+
+function syncFrameToVideo(){
+  const vw = video.videoWidth || 640;
+  const vh = video.videoHeight || 480;
   const usedWidth = Math.min(photoFrame.parentElement.clientWidth, 920);
   const h = Math.round(usedWidth * vh / vw);
-
-  photoFrame.style.width = usedWidth + "px";
-  photoFrame.style.height = h + "px";
+  photoFrame.style.width = usedWidth+"px";
+  photoFrame.style.height = h+"px";
 }
 
 /* Capture */
 captureBtn.addEventListener('click', () => {
-  if (!canvas.width || !canvas.height){
-    canvas.width = video.videoWidth || 1280;
-    canvas.height = video.videoHeight || 720;
-  }
-
   const ctx = canvas.getContext('2d');
   ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
@@ -156,10 +313,13 @@ captureBtn.addEventListener('click', () => {
   video.style.display = 'none';
 
   captureBtn.style.display = 'none';
+  switchCamBtn.style.display = 'none';
   analyzeBtn.style.display = 'inline-block';
 });
 
 /* Analyse */
+let dotsInterval=null;
+
 analyzeBtn.addEventListener('click', () => {
   analyzeBtn.remove();
   scanText.style.display = 'block';
@@ -174,17 +334,15 @@ analyzeBtn.addEventListener('click', () => {
   });
 });
 
-/* Points ... */
 function startDots(){
   let dots = 0;
-  dotsInterval = setInterval(() => {
-    dots = (dots + 1) % 4;
+  dotsInterval = setInterval(()=>{
+    dots = (dots+1)%4;
     scanText.textContent = "Analyse en cours" + ".".repeat(dots);
-  }, 500);
+  },500);
 }
 function stopDots(){ clearInterval(dotsInterval); }
 
-/* Scan animation */
 function startScanAnimation(done){
   const dirs = ['down','up','right','left'];
   let i = 0;
@@ -198,37 +356,33 @@ function startScanAnimation(done){
     scanOverlay.appendChild(line);
 
     let anim;
-    switch(dirs[i++]){
+    switch (dirs[i++]){
       case 'down':
         line.style.width='100%'; line.style.height='6px'; line.style.top='0';
-        anim = line.animate([{top:'0%'},{top:'100%'}],{duration:1000});
-        break;
+        anim = line.animate([{top:'0%'},{top:'100%'}],1000); break;
       case 'up':
         line.style.width='100%'; line.style.height='6px'; line.style.top='100%';
-        anim = line.animate([{top:'100%'},{top:'0%'}],{duration:1000});
-        break;
+        anim = line.animate([{top:'100%'},{top:'0%'}],1000); break;
       case 'right':
         line.style.height='100%'; line.style.width='6px'; line.style.left='0';
-        anim = line.animate([{left:'0%'},{left:'100%'}],{duration:1000});
-        break;
+        anim = line.animate([{left:'0%'},{left:'100%'}],1000); break;
       case 'left':
         line.style.height='100%'; line.style.width='6px'; line.style.left='100%';
-        anim = line.animate([{left:'100%'},{left:'0%'}],{duration:1000});
-        break;
+        anim = line.animate([{left:'100%'},{left:'0%'}],1000); break;
     }
     anim.onfinish = next;
   }
   next();
 }
 
-/* Effet d'écriture IA */
+/* Affichage texte IA */
 function typeText(text){
-  resultBox.style.display = 'block';
-  resultBox.textContent = '';
-  let i = 0;
+  resultBox.style.display='block';
+  resultBox.textContent='';
+  let i=0;
 
   function step(){
-    if(i < text.length){
+    if (i < text.length){
       resultBox.textContent += text.charAt(i++);
       setTimeout(step, 40 + Math.random()*50);
     }
@@ -236,41 +390,23 @@ function typeText(text){
   step();
 }
 
-/* --- Génération nom horodaté --- */
+/* Sauvegarde photo */
 function getTimestampFilename(){
-  const now = new Date();
-  const pad = n => String(n).padStart(2, '0');
-
-  const day = pad(now.getDate());
-  const month = pad(now.getMonth() + 1);
-  const year = now.getFullYear();
-  const hour = pad(now.getHours());
-  const min  = pad(now.getMinutes());
-  const sec  = pad(now.getSeconds());
-
-  return `${day}${month}${year}${hour}${min}${sec}.png`;
+  const n = new Date();
+  const p = v=>String(v).padStart(2,'0');
+  return `${p(n.getDate())}${p(n.getMonth()+1)}${n.getFullYear()}${p(n.getHours())}${p(n.getMinutes())}${p(n.getSeconds())}.png`;
 }
-
-/* --- Téléchargement --- */
 function downloadCapturedImage(){
-  const link = document.createElement('a');
-  link.download = getTimestampFilename();
-  link.href = canvas.toDataURL("image/png");
-  link.click();
+  const a = document.createElement('a');
+  a.href = canvas.toDataURL("image/png");
+  a.download = getTimestampFilename();
+  a.click();
 }
+resultBox.addEventListener('click', downloadCapturedImage);
 
-/* Clic sur la réponse IA -> téléchargement */
-resultBox.addEventListener('click', () => {
-  downloadCapturedImage();
-});
+window.addEventListener('beforeunload',()=>{ if (stream) stream.getTracks().forEach(t=>t.stop()); });
 
-/* Nettoyage */
-window.addEventListener('beforeunload', () => {
-  if (stream){
-    stream.getTracks().forEach(t => t.stop());
-  }
-});
 </script>
+
 </body>
 </html>
-
