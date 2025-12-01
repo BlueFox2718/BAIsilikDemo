@@ -5,6 +5,8 @@
 <meta name="viewport" content="width=device-width,initial-scale=1" />
 <title>B.AI.silik</title>
 <link href="https://fonts.googleapis.com/css2?family=Orbitron:wght@600&display=swap" rel="stylesheet">
+<link rel="manifest" href="/BAIsilikDemo/manifest.json">
+<meta name="theme-color" content="#0088FF">
 
 <style>
 :root { --futur-color:#0088FF; }
@@ -167,7 +169,7 @@ video, canvas{
 
   <div style="margin:12px 0; display:flex; gap:10px;">
     <button id="captureBtn">Capturer</button>
-    <button id="switchCamBtn" title="Changer de caméra">🔄</button>
+    <button id="switchCamBtn" title="Changer de caméra">📷🔄</button>
     <button id="analyzeBtn" style="display:none;">Analyser</button>
   </div>
 
@@ -407,6 +409,14 @@ resultBox.addEventListener('click', downloadCapturedImage);
 window.addEventListener('beforeunload',()=>{ if (stream) stream.getTracks().forEach(t=>t.stop()); });
 
 </script>
+
+
+<script>
+if ("serviceWorker" in navigator) {
+  navigator.serviceWorker.register("/BAIsilikDemo/sw.js");
+}
+</script>
+
 
 </body>
 </html>
